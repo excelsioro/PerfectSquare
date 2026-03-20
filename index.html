@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Square Proportion Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif&display=swap');
+
+  :root {
+    --bg: #1a1917;
+    --surface: #242320;
+    --surface-hover: #2e2d29;
+    --border: #3a3834;
+    --text: #e8e4dc;
+    --text-dim: #8a8578;
+    --accent: #c9a96e;
+    --accent-dim: rgba(201, 169, 110, 0.15);
+    --line-ab: #c9a96e;
+    --square-above: #6eb5c9;
+    --square-below: #c96e8a;
+    --point: #e8e4dc;
+    --radius: 6px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+  }
+  .btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--text-dim);
+  }
+
+  .btn-accent {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-accent:hover {
+    background: rgba(201, 169, 110, 0.25);
+  }
+
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    user-select: none;
+  }
+
+  .toggle {
+    position: relative;
+    width: 38px;
+    height: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.25s ease;
+  }
+  .toggle.on {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+  }
+  .toggle.on::after {
+    left: 20px;
+    background: var(--accent);
+  }
+
+  .separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .canvas-area.empty {
+    cursor: default;
+  }
+
+  .drop-zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .drop-zone .icon {
+    width: 48px;
+    height: 48px;
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+  }
+
+  .drop-zone p {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .drop-zone p span {
+    color: var(--accent);
+    cursor: pointer;
+    pointer-events: auto;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  canvas {
+    display: block;
+    touch-action: none;
+  }
+
+  .status-bar {
+    padding: 8px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    min-height: 34px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  input[type="file"] { display: none; }
+
+  .zoom-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    user-select: none;
+  }
+
+  .zoom-wrap input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .zoom-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+  }
+  .zoom-wrap input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+  }
+
+  .zoom-label {
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .angle-readout {
+    font-size: 12px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    min-width: 70px;
+  }
+
+  .drag-over .drop-zone .icon {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .main-layout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .canvas-area {
+    flex: 1;
+  }
+
+  .sidebar {
+    width: 220px;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-section h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .measure-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .measure-label {
+    color: var(--text);
+    font-weight: 400;
+  }
+  .measure-label.base {
+    color: var(--accent);
+  }
+  .measure-value {
+    color: var(--text-dim);
+  }
+  .measure-ratio {
+    color: var(--accent);
+    min-width: 46px;
+    text-align: right;
+  }
+
+  .ratio-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ratio-letter {
+    color: var(--text);
+    font-weight: 500;
+    min-width: 14px;
+  }
+  .ratio-val {
+    color: var(--accent);
+  }
+
+  .sidebar-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    opacity: 0.7;
+  }
+
+  .btn-sm {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+  }
+  .btn-sm:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">□ Proportion</div>
+  <div class="toolbar">
+    <label class="btn btn-accent" for="fileInput">Upload Image</label>
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="separator"></div>
+    <div class="toggle-wrap">
+      <span>Live Preview</span>
+      <div class="toggle on" id="togglePreview"></div>
+    </div>
+    <div class="separator"></div>
+    <div class="zoom-wrap">
+      <span>Zoom</span>
+      <input type="range" id="zoomSlider" min="50" max="300" value="100" step="5">
+      <span class="zoom-label" id="zoomLabel">100%</span>
+    </div>
+    <div class="separator"></div>
+    <div class="toggle-wrap">
+      <span>Angle</span>
+      <div class="toggle" id="toggleAngle"></div>
+      <span class="angle-readout" id="angleReadout"></span>
+    </div>
+    <div class="separator"></div>
+    <div class="toggle-wrap">
+      <span>Grid</span>
+      <div class="toggle" id="toggleGrid"></div>
+    </div>
+    <div class="separator"></div>
+    <button class="btn" id="addLineBtn" style="display:none">+ Line</button>
+    <button class="btn" id="resetBtn">Reset</button>
+  </div>
+</header>
+
+<div class="main-layout">
+<div class="canvas-area empty" id="canvasArea">
+  <div class="drop-zone" id="dropZone">
+    <div class="icon">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p>Drop an image here or <span id="browseLink">browse</span></p>
+  </div>
+  <canvas id="canvas"></canvas>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <h3>Measurements</h3>
+    <div id="measureList"></div>
+  </div>
+  <div class="sidebar-section">
+    <h3>Ratios</h3>
+    <div id="ratioList"></div>
+  </div>
+</div>
+</div>
+
+<div class="status-bar">
+  <span id="status">Upload an image to begin</span>
+  <div class="legend" id="legend" style="display:none">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--line-ab)"></div>
+      <span>AB</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--square-above)"></div>
+      <span>Above</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--square-below)"></div>
+      <span>Below</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const canvasArea = document.getElementById('canvasArea');
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const browseLink = document.getElementById('browseLink');
+  const togglePreview = document.getElementById('togglePreview');
+  const resetBtn = document.getElementById('resetBtn');
+  const statusEl = document.getElementById('status');
+  const legendEl = document.getElementById('legend');
+  const zoomSlider = document.getElementById('zoomSlider');
+  const zoomLabel = document.getElementById('zoomLabel');
+  const toggleAngle = document.getElementById('toggleAngle');
+  const angleReadout = document.getElementById('angleReadout');
+  const toggleGrid = document.getElementById('toggleGrid');
+  const addLineBtn = document.getElementById('addLineBtn');
+  const sidebar = document.getElementById('sidebar');
+  const measureList = document.getElementById('measureList');
+  const ratioList = document.getElementById('ratioList');
+
+  let img = null;
+  let scale = 1;
+  let offsetX = 0, offsetY = 0;
+  let pointA = null;
+  let pointB = null;
+  let mousePos = null;
+  let livePreview = true;
+  let finalized = false;
+  let draggingB = false;
+  let zoom = 1;
+  let showAngle = false;
+  let showGrid = false;
+  let panX = 0, panY = 0;
+  let panning = false;
+  let panStart = null;
+
+  // Pinch-to-zoom tracking
+  const activePointers = new Map(); // pointerId → {cx, cy}
+  let pinching = false;
+  let pinchStartDist = 0;
+  let pinchStartZoom = 1;
+
+  // Multi-measurement: array of { a, b, label } — first is always the base
+  let measurements = [];
+  // Which measurement is currently being built (index) or null
+  let activeMeasure = null;
+
+  const DRAG_THRESHOLD = 12;
+  const LINE_COLORS = ['var(--line-ab)', 'var(--square-above)', 'var(--square-below)', '#a68ccc', '#8ccc9e'];
+
+  // Toggle live preview
+  togglePreview.addEventListener('click', () => {
+    livePreview = !livePreview;
+    togglePreview.classList.toggle('on', livePreview);
+    draw();
+  });
+
+  // Zoom slider
+  zoomSlider.addEventListener('input', () => {
+    zoom = parseInt(zoomSlider.value) / 100;
+    zoomLabel.textContent = zoomSlider.value + '%';
+    fitCanvas();
+  });
+
+  // Angle toggle
+  toggleAngle.addEventListener('click', () => {
+    showAngle = !showAngle;
+    toggleAngle.classList.toggle('on', showAngle);
+    updateAngleDisplay();
+  });
+
+  // Grid toggle
+  toggleGrid.addEventListener('click', () => {
+    showGrid = !showGrid;
+    toggleGrid.classList.toggle('on', showGrid);
+    draw();
+  });
+
+  // Add Line button
+  addLineBtn.addEventListener('click', () => {
+    if (!img || activeMeasure !== null) return;
+    const idx = measurements.length;
+    const label = String.fromCharCode(66 + idx); // B, C, D, E...
+    measurements.push({ a: null, b: null, label, finalized: false });
+    activeMeasure = idx;
+    statusEl.textContent = 'Click to place ' + label + '₁';
+    draw();
+  });
+
+  // File input
+  browseLink.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) loadImage(e.target.files[0]);
+  });
+
+  // Drag and drop
+  canvasArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    canvasArea.classList.add('drag-over');
+  });
+  canvasArea.addEventListener('dragleave', () => {
+    canvasArea.classList.remove('drag-over');
+  });
+  canvasArea.addEventListener('drop', e => {
+    e.preventDefault();
+    canvasArea.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadImage(file);
+  });
+
+  // Reset
+  resetBtn.addEventListener('click', resetAll);
+
+  function loadImage(file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const image = new Image();
+      image.onload = () => {
+        img = image;
+        resetPoints();
+        fitCanvas();
+        canvasArea.classList.remove('empty');
+        dropZone.style.display = 'none';
+        legendEl.style.display = 'flex';
+        statusEl.textContent = 'Click to place point A';
+      };
+      image.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetPoints() {
+    pointA = null;
+    pointB = null;
+    mousePos = null;
+    finalized = false;
+    draggingB = false;
+    panning = false;
+    panStart = null;
+    measurements = [];
+    activeMeasure = null;
+    addLineBtn.style.display = 'none';
+    updateAngleDisplay();
+    updateMeasurementsPanel();
+  }
+
+  function resetAll() {
+    if (!img) return;
+    resetPoints();
+    panX = 0;
+    panY = 0;
+    statusEl.textContent = 'Click to place point A';
+    fitCanvas();
+  }
+
+  function fitCanvas() {
+    if (!img) return;
+    const rect = canvasArea.getBoundingClientRect();
+    const areaW = rect.width;
+    const areaH = rect.height;
+    // Base scale fits image to viewport; zoom multiplies on top
+    scale = Math.min(areaW / img.width, areaH / img.height, 1) * zoom;
+    // Canvas always fills the viewport area
+    canvas.width = areaW;
+    canvas.height = areaH;
+    canvas.style.position = 'absolute';
+    canvas.style.left = '0px';
+    canvas.style.top = '0px';
+    // Center offset for the image within the canvas
+    const imgW = img.width * scale;
+    const imgH = img.height * scale;
+    offsetX = (areaW - imgW) / 2;
+    offsetY = (areaH - imgH) / 2;
+    draw();
+  }
+
+  window.addEventListener('resize', fitCanvas);
+
+  // Canvas pixel coords ↔ image coords, accounting for pan + centering
+  function canvasToImg(cx, cy) {
+    return {
+      x: (cx - offsetX - panX) / scale,
+      y: (cy - offsetY - panY) / scale
+    };
+  }
+  function imgToCanvas(ix, iy) {
+    return {
+      x: ix * scale + offsetX + panX,
+      y: iy * scale + offsetY + panY
+    };
+  }
+
+  // Helper: distance from pointer to a point in canvas pixels
+  function distToPoint(cx, cy, pt) {
+    if (!pt) return Infinity;
+    const p = imgToCanvas(pt.x, pt.y);
+    const dx = cx - p.x;
+    const dy = cy - p.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Helper: distance from pointer to point B in canvas pixels
+  function distToB(cx, cy) {
+    return distToPoint(cx, cy, pointB);
+  }
+
+  // Which measurement line's B-endpoint is being dragged (-1 = none)
+  let draggingMeasureIdx = -1;
+
+  // Helper: extract canvas-relative coords from any pointer event
+  function pointerToCanvas(e) {
+    const rect = canvas.getBoundingClientRect();
+    return { cx: e.clientX - rect.left, cy: e.clientY - rect.top };
+  }
+
+  // Track whether the pointer moved significantly (to distinguish tap from drag)
+  let pointerDownPos = null;
+  const TAP_TOLERANCE = 6; // pixels — movement within this is still a "tap"
+
+  // Pointerdown: start drag (point B, measurement B, pan, or pinch)
+  canvas.addEventListener('pointerdown', e => {
+    if (!img) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+
+    const { cx, cy } = pointerToCanvas(e);
+    activePointers.set(e.pointerId, { cx, cy });
+
+    // Two fingers down → start pinch-to-zoom
+    if (activePointers.size === 2) {
+      // Cancel any single-finger action in progress
+      draggingB = false;
+      draggingMeasureIdx = -1;
+      panning = false;
+      panStart = null;
+
+      const pts = [...activePointers.values()];
+      pinchStartDist = Math.hypot(pts[1].cx - pts[0].cx, pts[1].cy - pts[0].cy);
+      pinchStartZoom = zoom;
+      pinching = true;
+      return;
+    }
+
+    // Single finger — only act if no other pointer is active
+    if (activePointers.size > 1) return;
+
+    pointerDownPos = { cx, cy };
+
+    // Priority 1: drag main point B
+    if (finalized && pointB && distToB(cx, cy) <= DRAG_THRESHOLD) {
+      draggingB = true;
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
+
+    // Priority 2: drag a measurement's B endpoint
+    for (let i = 0; i < measurements.length; i++) {
+      const m = measurements[i];
+      if (m.finalized && m.b && distToPoint(cx, cy, m.b) <= DRAG_THRESHOLD) {
+        draggingMeasureIdx = i;
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+    }
+
+    // Priority 3: pan (anytime no point/measurement is actively being placed by click)
+    if (activeMeasure === null || measurements[activeMeasure]?.a) {
+      panning = true;
+      panStart = { cx, cy, px: panX, py: panY };
+      canvas.style.cursor = 'move';
+    }
+  });
+
+  // Pointermove: pinch-zoom, drag point B, drag measurement, pan, or live preview
+  canvas.addEventListener('pointermove', e => {
+    if (!img) return;
+    e.preventDefault();
+    const { cx, cy } = pointerToCanvas(e);
+
+    // Update tracked pointer position
+    if (activePointers.has(e.pointerId)) {
+      activePointers.set(e.pointerId, { cx, cy });
+    }
+
+    // Pinch-to-zoom: adjust zoom relative to midpoint
+    if (pinching && activePointers.size === 2) {
+      const pts = [...activePointers.values()];
+      const curDist = Math.hypot(pts[1].cx - pts[0].cx, pts[1].cy - pts[0].cy);
+      if (pinchStartDist > 0) {
+        const midCx = (pts[0].cx + pts[1].cx) / 2;
+        const midCy = (pts[0].cy + pts[1].cy) / 2;
+
+        // What image point is under the pinch midpoint before zoom change
+        const imgPt = canvasToImg(midCx, midCy);
+
+        // New zoom
+        const ratio = curDist / pinchStartDist;
+        const newZoom = Math.max(0.5, Math.min(3, pinchStartZoom * ratio));
+        zoom = newZoom;
+
+        // Update scale
+        const rect = canvasArea.getBoundingClientRect();
+        const baseScale = Math.min(rect.width / img.width, rect.height / img.height, 1);
+        scale = baseScale * zoom;
+
+        // Recalculate offsets so the image point stays under the midpoint
+        const newImgW = img.width * scale;
+        const newImgH = img.height * scale;
+        offsetX = (rect.width - newImgW) / 2;
+        offsetY = (rect.height - newImgH) / 2;
+
+        // Adjust pan so imgPt stays at midCx/midCy
+        panX = midCx - (imgPt.x * scale + offsetX);
+        panY = midCy - (imgPt.y * scale + offsetY);
+
+        // Sync slider
+        zoomSlider.value = Math.round(zoom * 100);
+        zoomLabel.textContent = Math.round(zoom * 100) + '%';
+
+        draw();
+      }
+      return;
+    }
+
+    if (draggingB) {
+      pointB = canvasToImg(cx, cy);
+      draw();
+      return;
+    }
+
+    if (draggingMeasureIdx >= 0) {
+      measurements[draggingMeasureIdx].b = canvasToImg(cx, cy);
+      draw();
+      return;
+    }
+
+    if (panning && panStart) {
+      panX = panStart.px + (cx - panStart.cx);
+      panY = panStart.py + (cy - panStart.cy);
+      draw();
+      return;
+    }
+
+    // Cursor feedback (mouse/stylus only)
+    if (e.pointerType !== 'touch') {
+      let nearPoint = false;
+      if (finalized && pointB && distToB(cx, cy) <= DRAG_THRESHOLD) nearPoint = true;
+      if (!nearPoint) {
+        for (const m of measurements) {
+          if (m.finalized && m.b && distToPoint(cx, cy, m.b) <= DRAG_THRESHOLD) { nearPoint = true; break; }
+        }
+      }
+      if (nearPoint) {
+        canvas.style.cursor = 'grab';
+      } else if (activeMeasure !== null && !measurements[activeMeasure]?.a) {
+        canvas.style.cursor = 'crosshair';
+      } else if (!pointA) {
+        canvas.style.cursor = 'crosshair';
+      } else if (!finalized) {
+        canvas.style.cursor = 'crosshair';
+      } else {
+        canvas.style.cursor = 'move';
+      }
+    }
+
+    // Live preview while placing B (main or measurement)
+    if (pointA && !finalized) {
+      mousePos = canvasToImg(cx, cy);
+      if (livePreview) draw();
+    } else if (activeMeasure !== null) {
+      const m = measurements[activeMeasure];
+      if (m.a && !m.finalized) {
+        mousePos = canvasToImg(cx, cy);
+        if (livePreview) draw();
+      }
+    }
+  });
+
+  // Pointerup: end drag/pan/pinch, or treat as a tap to place points
+  canvas.addEventListener('pointerup', e => {
+    if (!img) return;
+    e.preventDefault();
+    canvas.releasePointerCapture(e.pointerId);
+    activePointers.delete(e.pointerId);
+
+    // If pinch was active, end it and consume the gesture
+    if (pinching) {
+      if (activePointers.size < 2) {
+        pinching = false;
+        pointerDownPos = null;
+      }
+      return;
+    }
+
+    const { cx, cy } = pointerToCanvas(e);
+
+    if (draggingB) {
+      draggingB = false;
+      canvas.style.cursor = 'default';
+      draw();
+      pointerDownPos = null;
+      return;
+    }
+
+    if (draggingMeasureIdx >= 0) {
+      draggingMeasureIdx = -1;
+      canvas.style.cursor = 'default';
+      draw();
+      pointerDownPos = null;
+      return;
+    }
+
+    // End panning state (but don't return — check for tap below)
+    const wasPanning = panning;
+    if (panning) {
+      panning = false;
+      panStart = null;
+      canvas.style.cursor = 'default';
+    }
+
+    // Check if this was a tap (not a drag/pan)
+    if (pointerDownPos) {
+      const dx = cx - pointerDownPos.cx;
+      const dy = cy - pointerDownPos.cy;
+      const moved = Math.sqrt(dx * dx + dy * dy);
+      pointerDownPos = null;
+
+      if (moved <= TAP_TOLERANCE) {
+        const pt = canvasToImg(cx, cy);
+
+        // Placing main A/B
+        if (!pointA) {
+          pointA = pt;
+          statusEl.textContent = 'Tap to place point B';
+          draw();
+          return;
+        }
+        if (!finalized) {
+          pointB = pt;
+          finalized = true;
+          addLineBtn.style.display = '';
+          statusEl.textContent = 'Drag B to resize · + Line to add measurements';
+          draw();
+          return;
+        }
+
+        // Placing measurement points
+        if (activeMeasure !== null) {
+          const m = measurements[activeMeasure];
+          if (!m.a) {
+            m.a = pt;
+            statusEl.textContent = 'Tap to place ' + m.label + '₂';
+            draw();
+          } else if (!m.finalized) {
+            m.b = pt;
+            m.finalized = true;
+            activeMeasure = null;
+            statusEl.textContent = 'Drag endpoints to resize · + Line to add more';
+            draw();
+          }
+          return;
+        }
+      } else if (wasPanning) {
+        draw();
+      }
+    }
+  });
+
+  canvas.addEventListener('pointerleave', e => {
+    activePointers.delete(e.pointerId);
+    if (pinching && activePointers.size < 2) {
+      pinching = false;
+    }
+    if (draggingB || draggingMeasureIdx >= 0) {
+      if (!canvas.hasPointerCapture(e.pointerId)) {
+        draggingB = false;
+        draggingMeasureIdx = -1;
+        canvas.style.cursor = 'default';
+        draw();
+      }
+      return;
+    }
+    if (panning) {
+      if (!canvas.hasPointerCapture(e.pointerId)) {
+        panning = false;
+        panStart = null;
+        canvas.style.cursor = 'default';
+      }
+      return;
+    }
+    if (!finalized && pointA && !pointB) {
+      mousePos = null;
+      if (livePreview) draw();
+    }
+    if (activeMeasure !== null) {
+      mousePos = null;
+      if (livePreview) draw();
+    }
+  });
+
+  canvas.addEventListener('pointercancel', e => {
+    activePointers.delete(e.pointerId);
+    if (pinching && activePointers.size < 2) pinching = false;
+    draggingB = false;
+    draggingMeasureIdx = -1;
+    panning = false;
+    panStart = null;
+  });
+
+  // Prevent context menu on long-press (mobile)
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Compute square vertices from two points
+  function computeSquares(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    // Perpendicular vector (same length as AB)
+    const px = -dy;
+    const py = dx;
+
+    // Square above: A, B, B+perp, A+perp
+    const above = [
+      a,
+      b,
+      { x: b.x + px, y: b.y + py },
+      { x: a.x + px, y: a.y + py }
+    ];
+    // Square below: A, B, B-perp, A-perp
+    const below = [
+      a,
+      b,
+      { x: b.x - px, y: b.y - py },
+      { x: a.x - px, y: a.y - py }
+    ];
+    return { above, below };
+  }
+
+  // Angle display helper
+  function computeAngle(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const rad = Math.atan2(dy, dx);
+    return (rad * 180 / Math.PI);
+  }
+
+  function updateAngleDisplay() {
+    if (!showAngle) {
+      angleReadout.textContent = '';
+      return;
+    }
+    let effB = finalized ? pointB : (livePreview ? mousePos : null);
+    if (pointA && effB) {
+      const angle = computeAngle(pointA, effB);
+      angleReadout.textContent = 'Angle: ' + angle.toFixed(1) + '°';
+    } else {
+      angleReadout.textContent = '';
+    }
+  }
+
+  function draw() {
+    if (!img) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw image with pan offset
+    const imgW = img.width * scale;
+    const imgH = img.height * scale;
+    ctx.drawImage(img, offsetX + panX, offsetY + panY, imgW, imgH);
+
+    // Determine effective B for main square
+    let effB = finalized ? pointB : (livePreview ? mousePos : null);
+
+    // Draw main squares if we have two points
+    if (pointA && effB) {
+      const { above, below } = computeSquares(pointA, effB);
+      const alpha = finalized ? 0.35 : 0.2;
+      const lineWidth = finalized ? 2 : 1.5;
+
+      drawSquare(above, 'var(--square-above)', alpha, lineWidth);
+      drawSquare(below, 'var(--square-below)', alpha, lineWidth);
+
+      // Grid subdivisions
+      if (showGrid) {
+        drawGridLines(above, 'var(--square-above)');
+        drawGridLines(below, 'var(--square-below)');
+      }
+
+      drawLine(pointA, effB, 'var(--line-ab)', finalized ? 2.5 : 2);
+    }
+
+    // Draw main points
+    if (pointA) {
+      drawPoint(pointA, 'A');
+      if (finalized && pointB) drawPoint(pointB, 'B');
+      else if (effB && livePreview) drawPointGhost(effB, 'B');
+    }
+
+    // Draw measurement lines
+    for (let i = 0; i < measurements.length; i++) {
+      const m = measurements[i];
+      const color = LINE_COLORS[(i + 1) % LINE_COLORS.length];
+      let mB = m.finalized ? m.b : (activeMeasure === i && m.a && livePreview ? mousePos : null);
+      if (m.a) {
+        drawPoint(m.a, m.label + '₁');
+        if (mB) {
+          drawLine(m.a, mB, color, m.finalized ? 2 : 1.5);
+          if (m.finalized) drawPoint(mB, m.label + '₂');
+          else if (livePreview) drawPointGhost(mB, m.label + '₂');
+        }
+      }
+    }
+
+    // Update sidebar
+    updateAngleDisplay();
+    updateMeasurementsPanel();
+  }
+
+  // Draw grid subdivision lines inside a square (midlines + diagonals)
+  function drawGridLines(verts, colorVar) {
+    const pts = verts.map(v => imgToCanvas(v.x, v.y));
+    // verts: [0]=A, [1]=B, [2]=B+perp, [3]=A+perp
+    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+    // Midlines: semi-transparent white, dashed, thinner
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 5]);
+
+    // Horizontal midline: midpoint(0,3) → midpoint(1,2)
+    const h1 = mid(pts[0], pts[3]);
+    const h2 = mid(pts[1], pts[2]);
+    ctx.beginPath(); ctx.moveTo(h1.x, h1.y); ctx.lineTo(h2.x, h2.y); ctx.stroke();
+
+    // Vertical midline: midpoint(0,1) → midpoint(3,2)
+    const v1 = mid(pts[0], pts[1]);
+    const v2 = mid(pts[3], pts[2]);
+    ctx.beginPath(); ctx.moveTo(v1.x, v1.y); ctx.lineTo(v2.x, v2.y); ctx.stroke();
+    ctx.restore();
+
+    // Diagonals: brighter white, solid, thicker
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+
+    // Diagonal 1: corner 0 → corner 2
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[2].x, pts[2].y); ctx.stroke();
+
+    // Diagonal 2: corner 1 → corner 3
+    ctx.beginPath(); ctx.moveTo(pts[1].x, pts[1].y); ctx.lineTo(pts[3].x, pts[3].y); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Compute pixel length of a line in image space
+  function lineLength(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Update measurements sidebar
+  function updateMeasurementsPanel() {
+    let baseLen = 0;
+    if (pointA && pointB && finalized) {
+      baseLen = lineLength(pointA, pointB);
+    }
+
+    // Measurements list
+    let mhtml = '';
+    if (baseLen > 0) {
+      mhtml += '<div class="measure-row"><span class="measure-label base">Base (A)</span>';
+      mhtml += '<span class="measure-value">' + Math.round(baseLen) + ' px</span>';
+      mhtml += '<span class="measure-ratio">—</span></div>';
+    } else {
+      mhtml += '<div class="measure-row"><span class="measure-label" style="color:var(--text-dim)">Base (A)</span>';
+      mhtml += '<span class="measure-value">—</span>';
+      mhtml += '<span class="measure-ratio">—</span></div>';
+    }
+    for (const m of measurements) {
+      if (m.a && m.b && m.finalized) {
+        const len = lineLength(m.a, m.b);
+        const ratio = baseLen > 0 ? (len / baseLen).toFixed(2) : '—';
+        mhtml += '<div class="measure-row"><span class="measure-label">Line ' + m.label + '</span>';
+        mhtml += '<span class="measure-value">' + Math.round(len) + ' px</span>';
+        mhtml += '<span class="measure-ratio">×' + ratio + '</span></div>';
+      }
+    }
+    measureList.innerHTML = mhtml;
+
+    // Ratios list
+    let rhtml = '';
+    if (baseLen > 0) {
+      rhtml += '<div class="ratio-row"><span class="ratio-letter">A</span><span class="ratio-val">= 1.00</span></div>';
+      for (const m of measurements) {
+        if (m.a && m.b && m.finalized) {
+          const ratio = (lineLength(m.a, m.b) / baseLen).toFixed(2);
+          rhtml += '<div class="ratio-row"><span class="ratio-letter">' + m.label + '</span><span class="ratio-val">= ' + ratio + '</span></div>';
+        }
+      }
+    } else {
+      rhtml += '<div class="ratio-row"><span class="ratio-letter" style="color:var(--text-dim)">A</span><span class="ratio-val" style="color:var(--text-dim)">= —</span></div>';
+    }
+    ratioList.innerHTML = rhtml;
+  }
+
+  function drawSquare(verts, colorVar, fillAlpha, lineWidth) {
+    const color = getComputedColor(colorVar);
+    const pts = verts.map(v => imgToCanvas(v.x, v.y));
+
+    // Fill
+    ctx.save();
+    ctx.globalAlpha = fillAlpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Stroke
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLine(a, b, colorVar, width) {
+    const color = getComputedColor(colorVar);
+    const pa = imgToCanvas(a.x, a.y);
+    const pb = imgToCanvas(b.x, b.y);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPoint(pt, label) {
+    const p = imgToCanvas(pt.x, pt.y);
+    ctx.save();
+    // Outer ring
+    ctx.fillStyle = '#1a1917';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner dot
+    ctx.fillStyle = getComputedColor('var(--point)');
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Label
+    ctx.fillStyle = getComputedColor('var(--point)');
+    ctx.font = '500 12px DM Sans, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, p.x + 12, p.y);
+    ctx.restore();
+  }
+
+  function drawPointGhost(pt, label) {
+    const p = imgToCanvas(pt.x, pt.y);
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#1a1917';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = getComputedColor('var(--point)');
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = '500 12px DM Sans, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, p.x + 12, p.y);
+    ctx.restore();
+  }
+
+  // Resolve CSS variable to a usable color
+  const colorCache = {};
+  function getComputedColor(varExpr) {
+    if (colorCache[varExpr]) return colorCache[varExpr];
+    const temp = document.createElement('div');
+    temp.style.color = varExpr;
+    document.body.appendChild(temp);
+    const c = getComputedStyle(temp).color;
+    document.body.removeChild(temp);
+    colorCache[varExpr] = c;
+    return c;
+  }
+})();
+</script>
+</body>
+</html>
